@@ -1,0 +1,171 @@
+# ============================================================
+# FallenDisks - Config
+# ============================================================
+# IMPORTANT NOTE:
+# - Resource pack hosting / URLs / required prompt / exporting / SHA1 / resend-on-update
+#   are handled by FallenPacks (if installed).
+# - FallenDisks handles: audio import/conversion + jukebox playback + holograms + GUI.
+#
+# This file controls how audio is imported/converted and how playback + holograms behave.
+# There is a tutorial for how to install the required depenedencies at the bottom of this config.
+# ============================================================
+
+general:
+  # pluginUsageMode:
+  # - SELF_HOSTED = the server/container runs yt-dlp + ffmpeg locally to fetch/convert audio
+  # - MANUAL      = you (or staff) upload audio files into a folder and create discs from those files
+  #
+  # If your server is running inside Docker/Crafty/Pterodactyl, SELF_HOSTED requires
+  # yt-dlp + ffmpeg + ffprobe installed inside that container.
+  pluginUsageMode: SELF_HOSTED
+
+  # spaceToken:
+  # Lets you pass “spaces” in command arguments without quotes.
+  # Example: /fdisks create <ID> <URL> --title:This__Title__Has__Spaces --artist:So__Does__The__Artist --texture:
+  # The plugin replaces "__" with " " in command parsing.
+  spaceToken: "__"
+
+sound:
+  # hearingDistance:
+  # How far away (in blocks) players can hear jukebox audio.
+  # “Vanilla-ish” is around 48 blocks.
+  hearingDistance: 48
+
+limits:
+  # maxSeconds:
+  # Default maximum length for newly created discs (in seconds).
+  # Users with permission: fallendisks.create.nolimit bypass this limit.
+  maxSeconds: 300
+
+manualMode:
+  # importFolder:
+  # Only used when pluginUsageMode: MANUAL
+  #
+  # Folder path is relative to plugins/FallenDisks/
+  # Example: plugins/FallenDisks/import/
+  #
+  # Workflow is basically:
+  #  1) upload audio file into plugins/FallenDisks/import/
+  #  2) run: /fdisks create <id> <file> --title: --artist: --texture:
+  importFolder: "import"
+
+tools:
+  # These are the commands FallenDisks will run when it needs to download/convert audio.
+  # The plugin DOES NOT download these tools for you — they must exist on the server/container.
+  #
+  # If the tools are installed but not on PATH, set these to absolute paths, e.g.:
+  #   ytDlp: "/usr/local/bin/yt-dlp"
+  #   ffmpeg: "/usr/bin/ffmpeg"
+  #   ffprobe: "/usr/bin/ffprobe"
+  ytDlp: "yt-dlp"
+  ffmpeg: "ffmpeg"
+  ffprobe: "ffprobe"
+
+  # ytDlpExtraArgs:
+  # Advanced: extra arguments passed to yt-dlp.
+  # Your default here forces the “android” client for youtube extraction, which can help
+  # with certain videos that fail with default clients.
+  ytDlpExtraArgs:
+    - "--extractor-args"
+    - "youtube:player_client=android"
+
+  # oggQuality: (Leave this alone if you don't know what you're doing!)
+  # Quality setting used during OGG conversion.
+  # Higher = better quality + bigger files.
+  # Lower = smaller files + more compression.
+  oggQuality: 5
+
+  # ffmpegThreads:
+  # Threads to use for ffmpeg.
+  # 0 usually means “auto / ffmpeg decides”.
+  ffmpegThreads: 0
+
+  # processTimeoutSeconds:
+  # Safety kill-switch: if yt-dlp or ffmpeg hangs, the plugin stops waiting after this many seconds.
+  processTimeoutSeconds: 180
+
+holograms:
+  decentHolograms:
+    # enabled:
+    # If true AND DecentHolograms is installed, FallenDisks will create/update a hologram
+    # above a jukebox while it is playing.
+    enabled: true
+
+    # yOffset:
+    # Vertical offset above the jukebox block (in blocks).
+    # Default allows for 4 lines to sit perfectly above the Jukebox.
+    yOffset: 2.35
+
+    # updateTicks:
+    # How often to update the hologram lines (server ticks).
+    # 20 ticks = ~1 second.
+    updateTicks: 20
+
+    # lines:
+    # What text to show. Color codes use & and will be converted to § in-game.
+    #
+    # Supported placeholders (current code):
+    #  {title}     = current track title
+    #  {artist}    = current track artist
+    #  {remaining} = remaining time (mm:ss)
+    #  {duration}  = full duration (mm:ss)
+    #  {playbar}   = progress bar string
+    #  {upnext}    = “Up Next” title (2nd disc in the queue)
+    lines:
+      - "&6Now Playing: &f{title}"
+      - "&7By: &f{artist}"
+      - "&f▶ ┃┃ &7{playbar} &f-{remaining}"
+      - "&7Up Next: &f{upnext}"
+
+# ============================================================
+# Mini tutorial / setup guide
+# ============================================================
+# 1) If you are using FallenPacks:
+#    - Install FallenPacks alongside FallenDisks.
+#    - FallenPacks handles pack delivery; FallenDisks focuses on audio + jukebox features.
+#
+# 2) SELF_HOSTED mode requirements (most common):
+#    You MUST install these inside the same environment the Minecraft server runs in:
+#      - yt-dlp
+#      - ffmpeg (includes ffprobe on most distros, but if not, install ffprobe)
+#
+#    Common install commands (inside the container/VM, NOT your Minecraft Server.):
+#
+#    Debian/Ubuntu:
+#      apt-get update
+#      apt-get install -y ffmpeg python3-pip
+#      pip3 install -U yt-dlp
+#
+#    Alpine (common for lightweight containers):
+#      apk add --no-cache ffmpeg python3 py3-pip
+#      pip3 install -U yt-dlp
+#
+#    Arch:
+#      pacman -Sy --noconfirm ffmpeg yt-dlp
+#
+#    Then confirm they exist:
+#      yt-dlp --version
+#      ffmpeg -version
+#      ffprobe -version
+#
+#    If commands don’t exist but tools ARE installed somewhere, set tools.ytDlp/ffmpeg/ffprobe
+#    to the absolute path of the binaries.
+#
+# 3) MANUAL mode (no yt-dlp required):
+#    - Set: general.pluginUsageMode: MANUAL
+#    - Upload audio files into: plugins/FallenDisks/import/  (or whatever importFolder is)
+#    - Create discs using the file name:
+#        /fdisks create <id> <file>
+#
+# 4) DecentHolograms:
+#    - Install DecentHolograms.
+#    - Set holograms.decentHolograms.enabled: true
+#    - Customize lines using the placeholders listed above.
+#
+# 5) Textures:
+#    - To use the custom textures feature, first download a png image.
+#    - Second, upload the png image into your plugins/FallenDisks/albumArt folder
+#    - Finally, when creating your song, add the --texture: flag with the name of the image without the .PNG.
+#    - Example: /fdisks create <ID> <URL> --title:Title --artist:Artist --texture:MyAlbumArt
+#    - Example Image: plugins/FallenDisks/albumArt/MyAlbumArt.png
+# ============================================================
